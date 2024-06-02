@@ -1,0 +1,42 @@
+---
+title: "assignment 8"
+output: html_notebook
+---
+
+Required Packages
+
+```{r}
+install.packages("Hmisc")
+library(Hmisc)
+```
+
+
+```{r}
+data_pos_skew <- rlnorm(1000, meanlog = 0, sdlog = 1)  # Positive skew
+data_sym <- rnorm(1000, mean = 0, sd = 1)              # Symmetric
+data_neg_skew <- -rlnorm(1000, meanlog = 0, sdlog = 1) # Negative skew
+
+
+data <- data.frame(  value = c(data_pos_skew, data_sym, data_neg_skew),
+                  skewness = factor(rep(c("Positively Skewed", "Symmetric", "Negatively Skewed"), each = 1000)))
+
+
+```
+
+
+
+```{r}
+se_pos_skew <- medianse(data_pos_skew)
+se_sym <- medianse(data_sym)
+se_neg_skew <- medianse(data_neg_skew)
+
+# Print the standard errors
+cat("Standard error of the median for positively skewed data:", se_pos_skew, "\n")
+cat("Standard error of the median for symmetric data:", se_sym, "\n")
+cat("Standard error of the median for negatively skewed data:", se_neg_skew, "\n")
+```
+```{r}
+standard_error_median <- sd(bootstrap_results$t)
+cat("Standard error of the median:", standard_error_median, "\n")
+```
+
