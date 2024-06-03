@@ -2,28 +2,57 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
+	"sort"
 
 	"gonum.org/v1/gonum/stat"
-	"gonum.org/v1/gonum/stat/sampleuv"
 )
 
+func generateSample(sampleSize int, mean, sd float64, rng *rand.Rand) []float64 {
+	sample := make([]float64, sampleSize)
+	for i := 0; i < sampleSize; i++ {
+		sample[i] = rng.NormFloat64()*sd + mean
+	}
+	return sample
+}
+
+func bootstrapSample(data []float64, rng *rand.Rand) []float64 {
+	n := len(data)
+	resample := make([]float64, n)
+	for i := range resample {
+		resample[i] = data[rng.Intn(n)]
+	}
+	return resample
+}
+
 func main() {
-	rand.Seed(123)
+	B := 100
+	sampleSize := 100
+	popMean := 100.0
+	popSD := 10.0
 
-	data := []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	rng := rand.New(rand.NewSource(9999)) // For reproducible results
 
-	numSamples := 1000
+	// Generate a single sample
+	thisSample := generateSample(sampleSize, popMean, popSD, rng)
 
-	medians := make([]float64, numSamples)
+	bootstrapMeans := make([]float64, B)
+	bootstrapMedians := make([]float64, B)
 
-	for i := 0; i < numSamples; i++ {
-		resample := sampleuv.Bootstrap(nil, data, len(data), func() Float64)
-		medians[i] = stat.Quantile(0.5, stat.Empirical, resample, nil)
+	for b := 0; b < B; b++ {
+		thisBootstrapSample := bootstrapSample(thisSample, rng)
+		sort.Float64s(thisBootstrapSample)
+		bootstrapMeans[b] = stat.Mean(thisBootstrapSample, nil)
+		bootstrapMedians[b] = stat.Quantile(0.5, stat.Empirical, thisBootstrapSample, nil)
 	}
 
-	mean, std := stat.MeanStdDev(medians, nil)
-	fmt.Println("Mean of medians:", mean)
-	fmt.Println("Standard error of the median:", std)
+	seMeanCLT := popSD / math.Sqrt(float64(sampleSize))
+	seMean := stat.StdDev(bootstrapMeans, nil)
+	seMedian := stat.StdDev(bootstrapMedians, nil)
+
+	fmt.Printf("SE Mean from Central Limit Theorem: %.2f\n", seMeanCLT)
+	fmt.Printf("SE Mean from Bootstrap Samples: %.2f\n", seMean)
+	fmt.Printf("SE Median Bootstrap Samples: %.2f\n", seMedian)
 
 }
